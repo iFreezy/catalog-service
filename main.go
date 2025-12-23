@@ -13,7 +13,7 @@ func main() {
 	}
 
 	//log.Printf("Server will start on port: %d", cfg.Server.Port)
-	log.Printf("Database DSN: postgresql://%s:$s@%s/%s",
+	log.Printf("Database DSN: postgresql://%s:%s@%s/%s",
 		cfg.Repository.Postgres.Username,
 		cfg.Repository.Postgres.Password,
 		cfg.Repository.Postgres.Address,
