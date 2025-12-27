@@ -26,3 +26,11 @@ build: ## Сборка приложения
 .PHONY: test
 test: ## Запуск тестов
 	go test -count=1 -v ./...
+
+.PHONY: run
+run: ## Запуск приложения
+	go run ${GO_FILE}
+
+.PHONY: clean
+clean: ## Очистка кэша приложения
+	go clean
