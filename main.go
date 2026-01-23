@@ -4,8 +4,6 @@ import (
 	"log"
 
 	"github.com/iFreezy/catalog-service/internal/app/config"
-	rhealth "github.com/iFreezy/catalog-service/internal/app/handler/health"
-	rprocessor "github.com/iFreezy/catalog-service/internal/app/processor"
 )
 
 func main() {
@@ -20,11 +18,5 @@ func main() {
 		cfg.Repository.Postgres.Address,
 		cfg.Repository.Postgres.Name)
 
-	healthHandler := rhealth.NewHandler()
-
-	httpServer := rprocessor.NewHttp(healthHandler, cfg.WebServer)
-
-	if err := httpServer.Serve(); err != nil {
-		log.Fatal(err)
-	}
+	_ = cfg // TODO: implement HTTP server
 }
