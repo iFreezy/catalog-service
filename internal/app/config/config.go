@@ -12,6 +12,7 @@ import (
 
 type Config struct {
 	Repository section.Repository
+	WebServer  section.WebServer
 }
 
 func Load() (Config, error) {
@@ -26,6 +27,10 @@ func Load() (Config, error) {
 
 	if err := envconfig.Process("REPOSITORY", &cfg.Repository); err != nil {
 		return Config{}, fmt.Errorf("parse REPOSITORY config: %w", err)
+	}
+
+	if err := envconfig.Process("WEB_SERVER", &cfg.WebServer); err != nil {
+		return Config{}, fmt.Errorf("parse WEB_SERVER config: %w", err)
 	}
 
 	return cfg, nil
