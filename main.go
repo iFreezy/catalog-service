@@ -22,10 +22,21 @@ func main() {
 		cfg.Repository.Postgres.Address,
 		cfg.Repository.Postgres.Name)
 
-	_, err = rcpostgres.NewConn(ctx, cfg.Repository.Postgres)
+	pgClient, err := rcpostgres.NewConn(ctx, cfg.Repository.Postgres)
 	if err != nil {
 		log.Fatal("Failed to connect to PostgreSQL:", err)
 	}
 
 	log.Println("Successfully connected to PostgreSQL!")
+
+	oldVer, newVer, err := pgClient.Migrate(ctx)
+	if err != nil {
+		log.Fatal("Failed to run migrations:", err)
+	}
+
+	if oldVer != newVer {
+		log.Printf("Database migrated: old_version=%d, new_version=%d", oldVer, newVer)
+	} else {
+		log.Printf("Database is up to date: version=%d", newVer)
+	}
 }

@@ -6,12 +6,15 @@ import (
 	"fmt"
 	"log"
 	"net/url"
+	"strconv"
 	"time"
 
 	"github.com/iFreezy/catalog-service/internal/app/config/section"
+	"github.com/iFreezy/catalog-service/migration"
 	"github.com/uptrace/bun"
 	"github.com/uptrace/bun/dialect/pgdialect"
 	"github.com/uptrace/bun/driver/pgdriver"
+	"github.com/uptrace/bun/migrate"
 )
 
 type (
@@ -65,4 +68,48 @@ func NewConn(ctx context.Context, cfg section.RepositoryPostgres) (*Client, erro
 		rawBunDB: rawBunDB,
 		cfg:      cfg,
 	}, nil
+}
+
+func (c *Client) Migrate(ctx context.Context) (oldVer, newVer int64, err error) {
+	migrations := migrate.NewMigrations()
+
+	if err = migrations.Discover(migration.Postgres); err != nil {
+		return 0, 0, fmt.Errorf("failed to discover migrations: %w", err)
+	}
+
+	opts := []migrate.MigratorOption{
+		migrate.WithTableName(c.cfg.MigrationTable),
+		migrate.WithLocksTableName(c.cfg.MigrationTable + "_lock"),
+		migrate.WithMarkAppliedOnSuccess(true),
+	}
+
+	m := migrate.NewMigrator(c.rawBunDB, migrations, opts...)
+
+	if err = m.Init(ctx); err != nil {
+		return 0, 0, fmt.Errorf("failed to init migrations table: %w", err)
+	}
+
+	applied, err := m.AppliedMigrations(ctx)
+	if err != nil {
+		return 0, 0, fmt.Errorf("failed to get applied migrations: %w", err)
+	}
+
+	if len(applied) > 0 {
+		oldVer, _ = strconv.ParseInt(applied[0].Name, 10, 64)
+	}
+
+	mgg, err := m.Migrate(ctx)
+	if err != nil {
+		return 0, 0, fmt.Errorf("failed to apply migrations: %w", err)
+	}
+
+	newVer = oldVer
+	for _, mg := range mgg.Migrations {
+		ver, _ := strconv.ParseInt(mg.Name, 10, 64)
+		if ver > newVer {
+			newVer = ver
+		}
+	}
+
+	return oldVer, newVer, nil
 }
