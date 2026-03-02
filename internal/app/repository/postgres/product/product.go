@@ -6,10 +6,9 @@ import (
 	"errors"
 
 	"github.com/gofrs/uuid"
-	"github.com/uptrace/bun"
-
 	"github.com/iFreezy/catalog-service/internal/app/entity"
 	"github.com/iFreezy/catalog-service/internal/app/repository"
+	"github.com/uptrace/bun"
 )
 
 type repo struct {

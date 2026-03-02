@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/gofrs/uuid"
-
 	"github.com/iFreezy/catalog-service/internal/app/entity"
 	"github.com/iFreezy/catalog-service/internal/app/repository"
 	"github.com/iFreezy/catalog-service/internal/app/service"

@@ -7,7 +7,6 @@ import (
 
 	"github.com/gofrs/uuid"
 	"github.com/gorilla/mux"
-
 	"github.com/iFreezy/catalog-service/internal/app/entity"
 	rhandler "github.com/iFreezy/catalog-service/internal/app/handler"
 	"github.com/iFreezy/catalog-service/internal/app/service"

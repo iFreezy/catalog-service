@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/gofrs/uuid"
-
 	"github.com/iFreezy/catalog-service/internal/app/entity"
 )
 
