@@ -6,9 +6,14 @@ import (
 )
 
 func SendJSON(w http.ResponseWriter, status int, data interface{}) {
+	buf, err := json.Marshal(data)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-	_ = json.NewEncoder(w).Encode(data)
+	_, _ = w.Write(buf)
 }
 
 func SendEmpty(w http.ResponseWriter, status int) {
@@ -16,7 +21,12 @@ func SendEmpty(w http.ResponseWriter, status int) {
 }
 
 func SendError(w http.ResponseWriter, status int, err error) {
+	buf, marshalErr := json.Marshal(map[string]string{"error": err.Error()})
+	if marshalErr != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-	_ = json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+	_, _ = w.Write(buf)
 }

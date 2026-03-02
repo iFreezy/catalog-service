@@ -4,7 +4,6 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
-
 	rhandler "github.com/iFreezy/catalog-service/internal/app/handler"
 )
 
