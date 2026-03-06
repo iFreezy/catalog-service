@@ -3,11 +3,12 @@ package pcategory
 import (
 	"context"
 	"database/sql"
-	"errors"
 
 	"github.com/gofrs/uuid"
 	"github.com/iFreezy/catalog-service/internal/app/entity"
 	"github.com/iFreezy/catalog-service/internal/app/repository"
+	rcpostgres "github.com/iFreezy/catalog-service/internal/app/repository/conn/postgres"
+	"github.com/iFreezy/catalog-service/internal/app/util"
 	"github.com/uptrace/bun"
 )
 
@@ -28,22 +29,19 @@ func (r *repo) GetByGUID(ctx context.Context, guid uuid.UUID) (entity.Category, 
 	var category entity.Category
 	err := r.db.NewSelect().Model(&category).Where("guid = ?", guid).Scan(ctx)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return entity.Category{}, entity.ErrNotFound
-		}
-		return entity.Category{}, err
+		return entity.Category{}, util.ReplaceErr1(err, sql.ErrNoRows, entity.ErrNotFound)
 	}
 	return category, nil
 }
 
 func (r *repo) Update(ctx context.Context, category entity.Category) error {
-	_, err := r.db.NewUpdate().Model(&category).WherePK().Exec(ctx)
-	return err
+	res, err := r.db.NewUpdate().Model(&category).WherePK().Exec(ctx)
+	return rcpostgres.UpdateErr(res, err)
 }
 
 func (r *repo) Delete(ctx context.Context, guid uuid.UUID) error {
 	_, err := r.db.NewDelete().Model((*entity.Category)(nil)).Where("guid = ?", guid).Exec(ctx)
-	return err
+	return rcpostgres.DeleteErr(err)
 }
 
 func (r *repo) List(ctx context.Context, name *string) ([]entity.Category, error) {

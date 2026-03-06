@@ -60,8 +60,10 @@ func (s *svc) Update(ctx context.Context, guid uuid.UUID, req entity.RequestCate
 	if err != nil {
 		return entity.Category{}, err
 	}
-	if len(existing) > 0 && existing[0].GUID != guid {
-		return entity.Category{}, entity.ErrAlreadyExists
+	for _, e := range existing {
+		if e.GUID != guid {
+			return entity.Category{}, entity.ErrAlreadyExists
+		}
 	}
 
 	category.Name = req.Name
@@ -75,10 +77,6 @@ func (s *svc) Update(ctx context.Context, guid uuid.UUID, req entity.RequestCate
 }
 
 func (s *svc) Delete(ctx context.Context, guid uuid.UUID) error {
-	if _, err := s.repoCategory.GetByGUID(ctx, guid); err != nil {
-		return err
-	}
-
 	products, err := s.repoProduct.List(ctx, nil, &guid)
 	if err != nil {
 		return err

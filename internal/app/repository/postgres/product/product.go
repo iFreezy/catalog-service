@@ -3,11 +3,12 @@ package pproduct
 import (
 	"context"
 	"database/sql"
-	"errors"
 
 	"github.com/gofrs/uuid"
 	"github.com/iFreezy/catalog-service/internal/app/entity"
 	"github.com/iFreezy/catalog-service/internal/app/repository"
+	rcpostgres "github.com/iFreezy/catalog-service/internal/app/repository/conn/postgres"
+	"github.com/iFreezy/catalog-service/internal/app/util"
 	"github.com/uptrace/bun"
 )
 
@@ -28,22 +29,19 @@ func (r *repo) GetByGUID(ctx context.Context, guid uuid.UUID) (entity.Product, e
 	var product entity.Product
 	err := r.db.NewSelect().Model(&product).Where("guid = ?", guid).Scan(ctx)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return entity.Product{}, entity.ErrNotFound
-		}
-		return entity.Product{}, err
+		return entity.Product{}, util.ReplaceErr1(err, sql.ErrNoRows, entity.ErrNotFound)
 	}
 	return product, nil
 }
 
 func (r *repo) Update(ctx context.Context, product entity.Product) error {
-	_, err := r.db.NewUpdate().Model(&product).WherePK().Exec(ctx)
-	return err
+	res, err := r.db.NewUpdate().Model(&product).WherePK().Exec(ctx)
+	return rcpostgres.UpdateErr(res, err)
 }
 
 func (r *repo) Delete(ctx context.Context, guid uuid.UUID) error {
 	_, err := r.db.NewDelete().Model((*entity.Product)(nil)).Where("guid = ?", guid).Exec(ctx)
-	return err
+	return rcpostgres.DeleteErr(err)
 }
 
 func (r *repo) List(ctx context.Context, name *string, categoryGUID *uuid.UUID) ([]entity.Product, error) {
@@ -56,5 +54,5 @@ func (r *repo) List(ctx context.Context, name *string, categoryGUID *uuid.UUID) 
 		q = q.Where("category_guid = ?", *categoryGUID)
 	}
 	err := q.Scan(ctx)
-	return products, err
+	return products, rcpostgres.DeleteErr(err)
 }

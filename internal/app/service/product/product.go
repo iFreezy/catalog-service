@@ -67,14 +67,14 @@ func (s *svc) Update(ctx context.Context, guid uuid.UUID, req entity.RequestProd
 	if err != nil {
 		return entity.Product{}, err
 	}
-	if len(existing) > 0 && existing[0].GUID != guid {
-		return entity.Product{}, entity.ErrAlreadyExists
+	for _, e := range existing {
+		if e.GUID != guid {
+			return entity.Product{}, entity.ErrAlreadyExists
+		}
 	}
 
-	if req.CategoryGUID != product.CategoryGUID {
-		if _, err := s.repoCategory.GetByGUID(ctx, req.CategoryGUID); err != nil {
-			return entity.Product{}, err
-		}
+	if _, err := s.repoCategory.GetByGUID(ctx, req.CategoryGUID); err != nil {
+		return entity.Product{}, err
 	}
 
 	product.Name = req.Name
@@ -91,10 +91,6 @@ func (s *svc) Update(ctx context.Context, guid uuid.UUID, req entity.RequestProd
 }
 
 func (s *svc) Delete(ctx context.Context, guid uuid.UUID) error {
-	if _, err := s.repoProduct.GetByGUID(ctx, guid); err != nil {
-		return err
-	}
-
 	return s.repoProduct.Delete(ctx, guid)
 }
 
