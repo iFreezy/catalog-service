@@ -12,11 +12,25 @@ type Processor struct {
 	server *http.Server
 }
 
-func New(health rhandler.Health, cfg section.WebServer) *Processor {
+func New(
+	cfg section.WebServer,
+	hHealth rhandler.Health,
+	hCategory rhandler.Category,
+	hProduct rhandler.Product,
+) *Processor {
 	router := mux.NewRouter()
 	router.NotFoundHandler = http.HandlerFunc(handlerNotFound)
 
-	vGenericRegHealthCheck(router, health)
+	vGenericRegHealthCheck(router, hHealth)
+
+	rV1 := router.PathPrefix("/v1").Subrouter()
+
+	if hCategory != nil {
+		v1RegCategoryHandler(rV1, hCategory)
+	}
+	if hProduct != nil {
+		v1RegProductHandler(rV1, hProduct)
+	}
 
 	server := &http.Server{
 		Addr:         cfg.Address,
