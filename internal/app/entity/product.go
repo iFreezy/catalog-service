@@ -19,48 +19,18 @@ type Product struct {
 	UpdatedAt     time.Time `bun:"updated_at"`
 }
 
-////////////////////////////////////////////////////////////////////////////////
-///// HTTP REQUEST & RESPONSE //////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-
 type RequestProductCreate struct {
-	Name         string    `json:"name"`
+	Name         string    `json:"name"          binding:"required,min=2,max=255"`
 	Description  *string   `json:"description"`
-	Price        float64   `json:"price"`
-	CategoryGUID uuid.UUID `json:"category_guid"`
-}
-
-func (r RequestProductCreate) Validate() error {
-	if r.Name == "" {
-		return ErrIncorrectParameters
-	}
-	if r.Price <= 0 {
-		return ErrIncorrectParameters
-	}
-	if r.CategoryGUID.IsNil() {
-		return ErrIncorrectParameters
-	}
-	return nil
+	Price        float64   `json:"price"         binding:"required,gt=0"`
+	CategoryGUID uuid.UUID `json:"category_guid" binding:"required"`
 }
 
 type RequestProductUpdate struct {
-	Name         string    `json:"name"`
+	Name         string    `json:"name"          binding:"required,min=2,max=255"`
 	Description  *string   `json:"description"`
-	Price        float64   `json:"price"`
-	CategoryGUID uuid.UUID `json:"category_guid"`
-}
-
-func (r RequestProductUpdate) Validate() error {
-	if r.Name == "" {
-		return ErrIncorrectParameters
-	}
-	if r.Price <= 0 {
-		return ErrIncorrectParameters
-	}
-	if r.CategoryGUID.IsNil() {
-		return ErrIncorrectParameters
-	}
-	return nil
+	Price        float64   `json:"price"         binding:"required,gt=0"`
+	CategoryGUID uuid.UUID `json:"category_guid" binding:"required"`
 }
 
 type ResponseProduct struct {
