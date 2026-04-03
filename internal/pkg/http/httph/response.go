@@ -11,7 +11,7 @@ func SendJSON(w http.ResponseWriter, status int, data interface{}) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set(HeaderContentType, MIMEApplicationJSONCharsetUTF8)
 	w.WriteHeader(status)
 	_, _ = w.Write(buf)
 }
@@ -26,7 +26,7 @@ func SendError(w http.ResponseWriter, status int, err error) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set(HeaderContentType, MIMEApplicationJSONCharsetUTF8)
 	w.WriteHeader(status)
 	_, _ = w.Write(buf)
 }

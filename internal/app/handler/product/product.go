@@ -1,7 +1,6 @@
 package hproduct
 
 import (
-	"encoding/json"
 	"errors"
 	"net/http"
 
@@ -10,6 +9,7 @@ import (
 	"github.com/iFreezy/catalog-service/internal/app/entity"
 	rhandler "github.com/iFreezy/catalog-service/internal/app/handler"
 	"github.com/iFreezy/catalog-service/internal/app/service"
+	"github.com/iFreezy/catalog-service/internal/pkg/http/binding"
 	"github.com/iFreezy/catalog-service/internal/pkg/http/httph"
 )
 
@@ -23,13 +23,9 @@ func NewHandler(svcProduct service.Product) rhandler.Product {
 
 func (h *handler) Create(w http.ResponseWriter, r *http.Request) {
 	var req entity.RequestProductCreate
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		httph.SendError(w, http.StatusBadRequest, entity.ErrIncorrectParameters)
-		return
-	}
 
-	if err := req.Validate(); err != nil {
-		httph.SendError(w, http.StatusBadRequest, err)
+	if err := binding.ScanAndValidateJSON(r, &req); err != nil {
+		httph.SendError(w, http.StatusBadRequest, entity.ErrIncorrectParameters)
 		return
 	}
 
@@ -100,13 +96,9 @@ func (h *handler) Update(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req entity.RequestProductUpdate
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		httph.SendError(w, http.StatusBadRequest, entity.ErrIncorrectParameters)
-		return
-	}
 
-	if err := req.Validate(); err != nil {
-		httph.SendError(w, http.StatusBadRequest, err)
+	if err := binding.ScanAndValidateJSON(r, &req); err != nil {
+		httph.SendError(w, http.StatusBadRequest, entity.ErrIncorrectParameters)
 		return
 	}
 
