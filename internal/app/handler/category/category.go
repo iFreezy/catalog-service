@@ -25,7 +25,7 @@ func (h *handler) Create(w http.ResponseWriter, r *http.Request) {
 	var req entity.RequestCategoryCreate
 
 	if err := binding.ScanAndValidateJSON(r, &req); err != nil {
-		httph.SendError(w, http.StatusBadRequest, entity.ErrIncorrectParameters)
+		httph.ErrorApplyErr(w, http.StatusBadRequest, entity.ErrIncorrectParameters)
 		return
 	}
 
@@ -33,9 +33,9 @@ func (h *handler) Create(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		switch {
 		case errors.Is(err, entity.ErrAlreadyExists):
-			httph.SendError(w, http.StatusBadRequest, err)
+			httph.ErrorApplyErr(w, http.StatusBadRequest, err)
 		default:
-			httph.SendError(w, http.StatusInternalServerError, err)
+			httph.ErrorApplyErr(w, http.StatusInternalServerError, err)
 		}
 		return
 	}
@@ -47,14 +47,14 @@ func (h *handler) Create(w http.ResponseWriter, r *http.Request) {
 		UpdatedAt: category.UpdatedAt,
 	}
 
-	httph.SendJSON(w, http.StatusCreated, resp)
+	httph.SendEncoded(w, r, http.StatusCreated, resp)
 }
 
 func (h *handler) GetByGUID(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	guid, err := uuid.FromString(vars["guid"])
 	if err != nil {
-		httph.SendError(w, http.StatusBadRequest, entity.ErrIncorrectParameters)
+		httph.ErrorApplyErr(w, http.StatusBadRequest, entity.ErrIncorrectParameters)
 		return
 	}
 
@@ -62,9 +62,9 @@ func (h *handler) GetByGUID(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		switch {
 		case errors.Is(err, entity.ErrNotFound):
-			httph.SendError(w, http.StatusNotFound, err)
+			httph.ErrorApplyErr(w, http.StatusNotFound, err)
 		default:
-			httph.SendError(w, http.StatusInternalServerError, err)
+			httph.ErrorApplyErr(w, http.StatusInternalServerError, err)
 		}
 		return
 	}
@@ -76,21 +76,21 @@ func (h *handler) GetByGUID(w http.ResponseWriter, r *http.Request) {
 		UpdatedAt: category.UpdatedAt,
 	}
 
-	httph.SendJSON(w, http.StatusOK, resp)
+	httph.SendEncoded(w, r, http.StatusOK, resp)
 }
 
 func (h *handler) Update(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	guid, err := uuid.FromString(vars["guid"])
 	if err != nil {
-		httph.SendError(w, http.StatusBadRequest, entity.ErrIncorrectParameters)
+		httph.ErrorApplyErr(w, http.StatusBadRequest, entity.ErrIncorrectParameters)
 		return
 	}
 
 	var req entity.RequestCategoryUpdate
 
 	if err := binding.ScanAndValidateJSON(r, &req); err != nil {
-		httph.SendError(w, http.StatusBadRequest, entity.ErrIncorrectParameters)
+		httph.ErrorApplyErr(w, http.StatusBadRequest, entity.ErrIncorrectParameters)
 		return
 	}
 
@@ -98,11 +98,11 @@ func (h *handler) Update(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		switch {
 		case errors.Is(err, entity.ErrNotFound):
-			httph.SendError(w, http.StatusNotFound, err)
+			httph.ErrorApplyErr(w, http.StatusNotFound, err)
 		case errors.Is(err, entity.ErrAlreadyExists):
-			httph.SendError(w, http.StatusBadRequest, err)
+			httph.ErrorApplyErr(w, http.StatusBadRequest, err)
 		default:
-			httph.SendError(w, http.StatusInternalServerError, err)
+			httph.ErrorApplyErr(w, http.StatusInternalServerError, err)
 		}
 		return
 	}
@@ -114,14 +114,14 @@ func (h *handler) Update(w http.ResponseWriter, r *http.Request) {
 		UpdatedAt: category.UpdatedAt,
 	}
 
-	httph.SendJSON(w, http.StatusOK, resp)
+	httph.SendEncoded(w, r, http.StatusOK, resp)
 }
 
 func (h *handler) Delete(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	guid, err := uuid.FromString(vars["guid"])
 	if err != nil {
-		httph.SendError(w, http.StatusBadRequest, entity.ErrIncorrectParameters)
+		httph.ErrorApplyErr(w, http.StatusBadRequest, entity.ErrIncorrectParameters)
 		return
 	}
 
@@ -129,11 +129,11 @@ func (h *handler) Delete(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		switch {
 		case errors.Is(err, entity.ErrNotFound):
-			httph.SendError(w, http.StatusNotFound, err)
+			httph.ErrorApplyErr(w, http.StatusNotFound, err)
 		case errors.Is(err, entity.ErrCategoryHasProducts):
-			httph.SendError(w, http.StatusBadRequest, err)
+			httph.ErrorApplyErr(w, http.StatusBadRequest, err)
 		default:
-			httph.SendError(w, http.StatusInternalServerError, err)
+			httph.ErrorApplyErr(w, http.StatusInternalServerError, err)
 		}
 		return
 	}
@@ -144,7 +144,7 @@ func (h *handler) Delete(w http.ResponseWriter, r *http.Request) {
 func (h *handler) List(w http.ResponseWriter, r *http.Request) {
 	categories, err := h.svcCategory.List(r.Context())
 	if err != nil {
-		httph.SendError(w, http.StatusInternalServerError, err)
+		httph.ErrorApplyErr(w, http.StatusInternalServerError, err)
 		return
 	}
 
@@ -158,5 +158,5 @@ func (h *handler) List(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	httph.SendJSON(w, http.StatusOK, resp)
+	httph.SendEncoded(w, r, http.StatusOK, resp)
 }

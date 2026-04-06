@@ -16,9 +16,12 @@ func SendRaw(w http.ResponseWriter, statusCode int, mimeType string, data []byte
 	}
 }
 
+func SendEmpty(w http.ResponseWriter, statusCode int) {
+	SendRaw(w, statusCode, "", nil)
+}
+
 func SendEncodedWithMIME(w http.ResponseWriter, r *http.Request, statusCode int, mimeType string, obj any) {
-	w.Header().Set(HeaderContentType, mimeType)
-	w.WriteHeader(statusCode)
+	SendRaw(w, statusCode, mimeType, nil)
 
 	if err := EncodeJSON(w, obj); err != nil {
 		ErrorApply(w, http.StatusInternalServerError, err.Error())
