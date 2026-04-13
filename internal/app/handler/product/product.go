@@ -1,7 +1,6 @@
 package hproduct
 
 import (
-	"encoding/json"
 	"errors"
 	"net/http"
 
@@ -10,6 +9,7 @@ import (
 	"github.com/iFreezy/catalog-service/internal/app/entity"
 	rhandler "github.com/iFreezy/catalog-service/internal/app/handler"
 	"github.com/iFreezy/catalog-service/internal/app/service"
+	"github.com/iFreezy/catalog-service/internal/pkg/http/binding"
 	"github.com/iFreezy/catalog-service/internal/pkg/http/httph"
 )
 
@@ -23,13 +23,9 @@ func NewHandler(svcProduct service.Product) rhandler.Product {
 
 func (h *handler) Create(w http.ResponseWriter, r *http.Request) {
 	var req entity.RequestProductCreate
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		httph.SendError(w, http.StatusBadRequest, entity.ErrIncorrectParameters)
-		return
-	}
 
-	if err := req.Validate(); err != nil {
-		httph.SendError(w, http.StatusBadRequest, err)
+	if err := binding.ScanAndValidateJSON(r, &req); err != nil {
+		httph.ErrorApplyErr(w, http.StatusBadRequest, entity.ErrIncorrectParameters)
 		return
 	}
 
@@ -37,11 +33,11 @@ func (h *handler) Create(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		switch {
 		case errors.Is(err, entity.ErrAlreadyExists):
-			httph.SendError(w, http.StatusBadRequest, err)
+			httph.ErrorApplyErr(w, http.StatusBadRequest, err)
 		case errors.Is(err, entity.ErrNotFound):
-			httph.SendError(w, http.StatusBadRequest, err)
+			httph.ErrorApplyErr(w, http.StatusBadRequest, err)
 		default:
-			httph.SendError(w, http.StatusInternalServerError, err)
+			httph.ErrorApplyErr(w, http.StatusInternalServerError, err)
 		}
 		return
 	}
@@ -56,14 +52,14 @@ func (h *handler) Create(w http.ResponseWriter, r *http.Request) {
 		UpdatedAt:    product.UpdatedAt,
 	}
 
-	httph.SendJSON(w, http.StatusCreated, resp)
+	httph.SendEncoded(w, r, http.StatusCreated, resp)
 }
 
 func (h *handler) GetByGUID(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	guid, err := uuid.FromString(vars["guid"])
 	if err != nil {
-		httph.SendError(w, http.StatusBadRequest, entity.ErrIncorrectParameters)
+		httph.ErrorApplyErr(w, http.StatusBadRequest, entity.ErrIncorrectParameters)
 		return
 	}
 
@@ -71,9 +67,9 @@ func (h *handler) GetByGUID(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		switch {
 		case errors.Is(err, entity.ErrNotFound):
-			httph.SendError(w, http.StatusNotFound, err)
+			httph.ErrorApplyErr(w, http.StatusNotFound, err)
 		default:
-			httph.SendError(w, http.StatusInternalServerError, err)
+			httph.ErrorApplyErr(w, http.StatusInternalServerError, err)
 		}
 		return
 	}
@@ -88,25 +84,21 @@ func (h *handler) GetByGUID(w http.ResponseWriter, r *http.Request) {
 		UpdatedAt:    product.UpdatedAt,
 	}
 
-	httph.SendJSON(w, http.StatusOK, resp)
+	httph.SendEncoded(w, r, http.StatusOK, resp)
 }
 
 func (h *handler) Update(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	guid, err := uuid.FromString(vars["guid"])
 	if err != nil {
-		httph.SendError(w, http.StatusBadRequest, entity.ErrIncorrectParameters)
+		httph.ErrorApplyErr(w, http.StatusBadRequest, entity.ErrIncorrectParameters)
 		return
 	}
 
 	var req entity.RequestProductUpdate
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		httph.SendError(w, http.StatusBadRequest, entity.ErrIncorrectParameters)
-		return
-	}
 
-	if err := req.Validate(); err != nil {
-		httph.SendError(w, http.StatusBadRequest, err)
+	if err := binding.ScanAndValidateJSON(r, &req); err != nil {
+		httph.ErrorApplyErr(w, http.StatusBadRequest, entity.ErrIncorrectParameters)
 		return
 	}
 
@@ -114,11 +106,11 @@ func (h *handler) Update(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		switch {
 		case errors.Is(err, entity.ErrNotFound):
-			httph.SendError(w, http.StatusNotFound, err)
+			httph.ErrorApplyErr(w, http.StatusNotFound, err)
 		case errors.Is(err, entity.ErrAlreadyExists):
-			httph.SendError(w, http.StatusBadRequest, err)
+			httph.ErrorApplyErr(w, http.StatusBadRequest, err)
 		default:
-			httph.SendError(w, http.StatusInternalServerError, err)
+			httph.ErrorApplyErr(w, http.StatusInternalServerError, err)
 		}
 		return
 	}
@@ -133,14 +125,14 @@ func (h *handler) Update(w http.ResponseWriter, r *http.Request) {
 		UpdatedAt:    product.UpdatedAt,
 	}
 
-	httph.SendJSON(w, http.StatusOK, resp)
+	httph.SendEncoded(w, r, http.StatusOK, resp)
 }
 
 func (h *handler) Delete(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	guid, err := uuid.FromString(vars["guid"])
 	if err != nil {
-		httph.SendError(w, http.StatusBadRequest, entity.ErrIncorrectParameters)
+		httph.ErrorApplyErr(w, http.StatusBadRequest, entity.ErrIncorrectParameters)
 		return
 	}
 
@@ -148,9 +140,9 @@ func (h *handler) Delete(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		switch {
 		case errors.Is(err, entity.ErrNotFound):
-			httph.SendError(w, http.StatusNotFound, err)
+			httph.ErrorApplyErr(w, http.StatusNotFound, err)
 		default:
-			httph.SendError(w, http.StatusInternalServerError, err)
+			httph.ErrorApplyErr(w, http.StatusInternalServerError, err)
 		}
 		return
 	}
@@ -161,7 +153,7 @@ func (h *handler) Delete(w http.ResponseWriter, r *http.Request) {
 func (h *handler) List(w http.ResponseWriter, r *http.Request) {
 	products, err := h.svcProduct.List(r.Context())
 	if err != nil {
-		httph.SendError(w, http.StatusInternalServerError, err)
+		httph.ErrorApplyErr(w, http.StatusInternalServerError, err)
 		return
 	}
 
@@ -178,5 +170,5 @@ func (h *handler) List(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	httph.SendJSON(w, http.StatusOK, resp)
+	httph.SendEncoded(w, r, http.StatusOK, resp)
 }
