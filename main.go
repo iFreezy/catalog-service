@@ -2,7 +2,9 @@ package main
 
 import (
 	"context"
-	"log"
+	"os"
+
+	"github.com/rs/zerolog/log"
 
 	"github.com/iFreezy/catalog-service/internal/app/config"
 	hcategory "github.com/iFreezy/catalog-service/internal/app/handler/category"
@@ -19,29 +21,30 @@ import (
 func main() {
 	ctx := context.Background()
 
-	cfg, err := config.Load()
-	if err != nil {
-		log.Fatal("Failed to load config:", err)
-	}
+	config.Load(config.LoadArgs{
+		Output:          os.Stdout,
+		EnableSimpleLog: true,
+		SkipConfig:      false,
+	})
+
+	cfg := config.Root
 
 	// Подключение к PostgreSQL
 	pgClient, err := rcpostgres.NewConn(ctx, cfg.Repository.Postgres)
 	if err != nil {
-		log.Fatal("Failed to connect to PostgreSQL:", err)
+		log.Fatal().Err(err).Msg("connect to PostgreSQL")
 	}
-
-	log.Println("Successfully connected to PostgreSQL!")
+	log.Info().Msg("Successfully connected to PostgreSQL")
 
 	// Миграции
 	oldVer, newVer, err := pgClient.Migrate(ctx)
 	if err != nil {
-		log.Fatal("Failed to run migrations:", err)
+		log.Fatal().Err(err).Msg("run migrations")
 	}
-
 	if oldVer != newVer {
-		log.Printf("Database migrated: old_version=%d, new_version=%d", oldVer, newVer)
+		log.Info().Int64("old", oldVer).Int64("new", newVer).Msg("Database migrated")
 	} else {
-		log.Printf("Database is up to date: version=%d", newVer)
+		log.Info().Int64("version", newVer).Msg("Database is up to date")
 	}
 
 	// Репозитории
@@ -65,8 +68,8 @@ func main() {
 		productHandler,
 	)
 
-	log.Printf("Starting HTTP server on %s", cfg.WebServer.Address)
+	log.Info().Str("addr", cfg.WebServer.Address).Msg("Starting HTTP server")
 	if err := server.Serve(); err != nil {
-		log.Fatal("HTTP server error:", err)
+		log.Fatal().Err(err).Msg("HTTP server error")
 	}
 }

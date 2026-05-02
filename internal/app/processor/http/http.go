@@ -6,6 +6,9 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/iFreezy/catalog-service/internal/app/config/section"
 	rhandler "github.com/iFreezy/catalog-service/internal/app/handler"
+	"github.com/iFreezy/catalog-service/internal/app/util"
+	"github.com/iFreezy/catalog-service/internal/pkg/http/httph"
+	"github.com/iFreezy/catalog-service/internal/pkg/http/mzerolog"
 )
 
 type Processor struct {
@@ -20,6 +23,27 @@ func New(
 ) *Processor {
 	router := mux.NewRouter()
 	router.NotFoundHandler = http.HandlerFunc(handlerNotFound)
+
+	router.Use(httph.NewErrorMiddleware())
+
+	router.Use(mzerolog.NewMiddleware(
+		mzerolog.WithSkipper(util.IsFilteredHttpRoute),
+		mzerolog.WithStringExtractor("user_id", func(r *http.Request) string {
+			return r.Header.Get("X-User-ID")
+		}),
+		mzerolog.WithStringExtractor("session_id", func(r *http.Request) string {
+			return r.Header.Get("X-Session-ID")
+		}),
+		mzerolog.WithStringExtractorOnFail("request_id", func(r *http.Request) string {
+			return r.Header.Get("X-Request-ID")
+		}),
+		mzerolog.WithAnyExtractorOnSuccess("content_length", func(r *http.Request) any {
+			if r.ContentLength > 0 {
+				return r.ContentLength
+			}
+			return nil
+		}),
+	))
 
 	vGenericRegHealthCheck(router, hHealth)
 

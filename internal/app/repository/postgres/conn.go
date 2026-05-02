@@ -4,10 +4,11 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"log"
 	"net/url"
 	"strconv"
 	"time"
+
+	"github.com/rs/zerolog/log"
 
 	"github.com/iFreezy/catalog-service/internal/app/config/section"
 	"github.com/iFreezy/catalog-service/migration"
@@ -43,7 +44,10 @@ func NewConn(ctx context.Context, cfg section.RepositoryPostgres) (*Client, erro
 	args.Set("sslmode", "disable")
 	u.RawQuery = args.Encode()
 
-	log.Printf("PostgreSQL connection: ReadTimeout=%s, WriteTimeout=%s", cfg.ReadTimeout, cfg.WriteTimeout)
+	log.Debug().
+		Stringer("read_timeout", cfg.ReadTimeout).
+		Stringer("write_timeout", cfg.WriteTimeout).
+		Msg("PostgreSQL connection params")
 
 	sqlDB := sql.OpenDB(pgdriver.NewConnector(
 		pgdriver.WithDSN(u.String()),
