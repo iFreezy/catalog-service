@@ -4,8 +4,6 @@ import (
 	"context"
 	"os"
 
-	"github.com/rs/zerolog/log"
-
 	"github.com/iFreezy/catalog-service/internal/app/config"
 	hcategory "github.com/iFreezy/catalog-service/internal/app/handler/category"
 	rhealth "github.com/iFreezy/catalog-service/internal/app/handler/health"
@@ -16,6 +14,7 @@ import (
 	pproduct "github.com/iFreezy/catalog-service/internal/app/repository/postgres/product"
 	scategory "github.com/iFreezy/catalog-service/internal/app/service/category"
 	sproduct "github.com/iFreezy/catalog-service/internal/app/service/product"
+	"github.com/rs/zerolog/log"
 )
 
 func main() {
