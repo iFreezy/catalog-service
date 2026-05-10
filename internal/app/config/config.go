@@ -1,7 +1,6 @@
 package config
 
 import (
-	"errors"
 	"io"
 	"os"
 	"time"
@@ -60,20 +59,11 @@ func Load(args LoadArgs) {
 	}
 
 	if err := godotenv.Load(); err != nil {
-		var pathErr *os.PathError
-		if !errors.As(err, &pathErr) {
-			log.Fatal().Err(err).Msg("load .env")
-		}
+		log.Warn().Err(err).Msg("load .env")
 	}
 
-	if err := envconfig.Process("REPOSITORY", &Root.Repository); err != nil {
-		log.Fatal().Err(err).Msg("parse REPOSITORY config")
-	}
-	if err := envconfig.Process("WEB_SERVER", &Root.WebServer); err != nil {
-		log.Fatal().Err(err).Msg("parse WEB_SERVER config")
-	}
-	if err := envconfig.Process("APP", &Root.Monitor); err != nil {
-		log.Fatal().Err(err).Msg("parse APP config")
+	if err := envconfig.Process("APP", &Root); err != nil {
+		log.Fatal().Err(err).Msg("Failed to load config")
 	}
 
 	level, err := zerolog.ParseLevel(Root.Monitor.LogLevel)
