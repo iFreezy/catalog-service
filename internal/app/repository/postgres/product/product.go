@@ -7,27 +7,29 @@ import (
 	"github.com/gofrs/uuid"
 	"github.com/iFreezy/catalog-service/internal/app/entity"
 	"github.com/iFreezy/catalog-service/internal/app/repository"
-	rcpostgres "github.com/iFreezy/catalog-service/internal/app/repository/conn/postgres"
+	rcconn "github.com/iFreezy/catalog-service/internal/app/repository/conn/postgres"
+	rcpostgres "github.com/iFreezy/catalog-service/internal/app/repository/postgres"
 	"github.com/iFreezy/catalog-service/internal/app/util"
-	"github.com/uptrace/bun"
 )
 
 type repo struct {
-	db bun.IDB
+	*rcpostgres.Client
 }
 
-func NewRepoFromPostgres(db bun.IDB) repository.Product {
-	return &repo{db: db}
+var _ repository.Product = (*repo)(nil)
+
+func NewRepoFromPostgres(client *rcpostgres.Client) repository.Product {
+	return &repo{Client: client}
 }
 
 func (r *repo) Create(ctx context.Context, product entity.Product) error {
-	_, err := r.db.NewInsert().Model(&product).Exec(ctx)
+	_, err := r.NewInsert().Model(&product).Exec(ctx)
 	return err
 }
 
 func (r *repo) GetByGUID(ctx context.Context, guid uuid.UUID) (entity.Product, error) {
 	var product entity.Product
-	err := r.db.NewSelect().Model(&product).Where("guid = ?", guid).Scan(ctx)
+	err := r.NewSelect().Model(&product).Where("guid = ?", guid).Scan(ctx)
 	if err != nil {
 		return entity.Product{}, util.ReplaceErr1(err, sql.ErrNoRows, entity.ErrNotFound)
 	}
@@ -35,18 +37,18 @@ func (r *repo) GetByGUID(ctx context.Context, guid uuid.UUID) (entity.Product, e
 }
 
 func (r *repo) Update(ctx context.Context, product entity.Product) error {
-	res, err := r.db.NewUpdate().Model(&product).WherePK().Exec(ctx)
-	return rcpostgres.UpdateErr(res, err)
+	res, err := r.NewUpdate().Model(&product).WherePK().Exec(ctx)
+	return rcconn.UpdateErr(res, err)
 }
 
 func (r *repo) Delete(ctx context.Context, guid uuid.UUID) error {
-	_, err := r.db.NewDelete().Model((*entity.Product)(nil)).Where("guid = ?", guid).Exec(ctx)
-	return rcpostgres.DeleteErr(err)
+	_, err := r.NewDelete().Model((*entity.Product)(nil)).Where("guid = ?", guid).Exec(ctx)
+	return rcconn.DeleteErr(err)
 }
 
 func (r *repo) List(ctx context.Context, name *string, categoryGUID *uuid.UUID) ([]entity.Product, error) {
 	var products []entity.Product
-	q := r.db.NewSelect().Model(&products)
+	q := r.NewSelect().Model(&products)
 	if name != nil {
 		q = q.Where("name = ?", *name)
 	}
@@ -54,5 +56,5 @@ func (r *repo) List(ctx context.Context, name *string, categoryGUID *uuid.UUID) 
 		q = q.Where("category_guid = ?", *categoryGUID)
 	}
 	err := q.Scan(ctx)
-	return products, rcpostgres.DeleteErr(err)
+	return products, rcconn.DeleteErr(err)
 }
