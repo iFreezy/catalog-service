@@ -28,7 +28,7 @@ func (s *svc) Create(ctx context.Context, req entity.RequestProductCreate) (enti
 		return entity.Product{}, err
 	}
 	if len(existing) > 0 {
-		return entity.Product{}, entity.ErrAlreadyExists
+		return entity.Product{}, entity.ErrProductDuplicate
 	}
 
 	if _, err := s.repoCategory.GetByGUID(ctx, req.CategoryGUID); err != nil {
@@ -69,7 +69,7 @@ func (s *svc) Update(ctx context.Context, guid uuid.UUID, req entity.RequestProd
 	}
 	for _, e := range existing {
 		if e.GUID != guid {
-			return entity.Product{}, entity.ErrAlreadyExists
+			return entity.Product{}, entity.ErrProductDuplicate
 		}
 	}
 

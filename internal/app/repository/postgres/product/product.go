@@ -37,13 +37,20 @@ func (r *repo) GetByGUID(ctx context.Context, guid uuid.UUID) (entity.Product, e
 }
 
 func (r *repo) Update(ctx context.Context, product entity.Product) error {
-	res, err := r.NewUpdate().Model(&product).WherePK().Exec(ctx)
-	return rcconn.UpdateErr(res, err)
+	return r.NewUpdate().
+		Model(&product).
+		WherePK().
+		Returning("*").
+		Scan(ctx, &product)
 }
 
 func (r *repo) Delete(ctx context.Context, guid uuid.UUID) error {
-	_, err := r.NewDelete().Model((*entity.Product)(nil)).Where("guid = ?", guid).Exec(ctx)
-	return rcconn.DeleteErr(err)
+	var deleted entity.Product
+	return r.NewDelete().
+		Model(&deleted).
+		Where("guid = ?", guid).
+		Returning("*").
+		Scan(ctx, &deleted)
 }
 
 func (r *repo) List(ctx context.Context, name *string, categoryGUID *uuid.UUID) ([]entity.Product, error) {
