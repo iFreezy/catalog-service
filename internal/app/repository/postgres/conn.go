@@ -66,11 +66,49 @@ func NewConn(ctx context.Context, cfg section.RepositoryPostgres) (*Client, erro
 		return nil, fmt.Errorf("failed to ping connection: %w", err)
 	}
 
+	bunDB := newBunIdbTxInjector(rawBunDB)
+
 	return &Client{
-		_bunDB:   rawBunDB,
+		_bunDB:   bunDB,
 		rawBunDB: rawBunDB,
 		cfg:      cfg,
 	}, nil
+}
+
+func (c *Client) InsideTx(ctx context.Context, f func(ctx context.Context) error) error {
+	if tx := getTxFromContext(ctx); tx.Tx != nil {
+		log.Ctx(ctx).Debug().Msg("already in transaction, reusing")
+		return f(ctx)
+	}
+
+	tx, err := c.rawBunDB.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("failed to begin transaction: %w", err)
+	}
+
+	done := false
+	defer func() {
+		if !done {
+			_ = tx.Rollback()
+		}
+	}()
+
+	log.Ctx(ctx).Debug().Msg("starting transaction")
+
+	ctx = setTxToContext(ctx, tx)
+
+	if err = f(ctx); err != nil {
+		return err
+	}
+
+	done = true
+	log.Ctx(ctx).Debug().Msg("committing transaction")
+
+	if err = tx.Commit(); err != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	return nil
 }
 
 func (c *Client) Migrate(ctx context.Context) (oldVer, newVer int64, err error) {
