@@ -1,6 +1,6 @@
 module github.com/iFreezy/catalog-service
 
-go 1.25.0
+go 1.24.1
 
 require (
 	github.com/joho/godotenv v1.5.1
@@ -11,7 +11,7 @@ require (
 	github.com/go-playground/form/v4 v4.3.0
 	github.com/go-playground/locales v0.14.1
 	github.com/go-playground/universal-translator v0.18.1
-	github.com/go-playground/validator/v10 v10.30.3
+	github.com/go-playground/validator/v10 v10.27.0
 	github.com/gofrs/uuid v4.4.0+incompatible
 	github.com/gorilla/mux v1.8.1
 	github.com/rs/zerolog v1.35.1
@@ -32,8 +32,8 @@ require (
 	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect
 	go.opentelemetry.io/otel v1.38.0 // indirect
 	go.opentelemetry.io/otel/trace v1.38.0 // indirect
-	golang.org/x/crypto v0.52.0 // indirect
-	golang.org/x/sys v0.45.0 // indirect
-	golang.org/x/text v0.37.0 // indirect
+	golang.org/x/crypto v0.45.0 // indirect
+	golang.org/x/sys v0.40.0 // indirect
+	golang.org/x/text v0.33.0 // indirect
 	mellium.im/sasl v0.3.2 // indirect
 )
