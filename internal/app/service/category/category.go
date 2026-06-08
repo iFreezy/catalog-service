@@ -28,7 +28,7 @@ func (s *svc) Create(ctx context.Context, req entity.RequestCategoryCreate) (ent
 		return entity.Category{}, err
 	}
 	if len(existing) > 0 {
-		return entity.Category{}, entity.ErrAlreadyExists
+		return entity.Category{}, entity.ErrCategoryDuplicate
 	}
 
 	now := time.Now()
@@ -62,7 +62,7 @@ func (s *svc) Update(ctx context.Context, guid uuid.UUID, req entity.RequestCate
 	}
 	for _, e := range existing {
 		if e.GUID != guid {
-			return entity.Category{}, entity.ErrAlreadyExists
+			return entity.Category{}, entity.ErrCategoryDuplicate
 		}
 	}
 

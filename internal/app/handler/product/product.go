@@ -32,7 +32,7 @@ func (h *handler) Create(w http.ResponseWriter, r *http.Request) {
 	product, err := h.svcProduct.Create(r.Context(), req)
 	if err != nil {
 		switch {
-		case errors.Is(err, entity.ErrAlreadyExists):
+		case errors.Is(err, entity.ErrProductDuplicate):
 			httph.ErrorApply(r, err)
 		case errors.Is(err, entity.ErrNotFound):
 			httph.ErrorApply(r, err)
@@ -107,7 +107,7 @@ func (h *handler) Update(w http.ResponseWriter, r *http.Request) {
 		switch {
 		case errors.Is(err, entity.ErrNotFound):
 			httph.ErrorApply(r, err)
-		case errors.Is(err, entity.ErrAlreadyExists):
+		case errors.Is(err, entity.ErrProductDuplicate):
 			httph.ErrorApply(r, err)
 		default:
 			httph.ErrorApply(r, err)

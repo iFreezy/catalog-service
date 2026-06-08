@@ -7,7 +7,6 @@ import (
 	"github.com/gofrs/uuid"
 	"github.com/iFreezy/catalog-service/internal/app/entity"
 	"github.com/iFreezy/catalog-service/internal/app/repository"
-	rcconn "github.com/iFreezy/catalog-service/internal/app/repository/conn/postgres"
 	rcpostgres "github.com/iFreezy/catalog-service/internal/app/repository/postgres"
 	"github.com/iFreezy/catalog-service/internal/app/util"
 )
@@ -37,13 +36,20 @@ func (r *repo) GetByGUID(ctx context.Context, guid uuid.UUID) (entity.Category, 
 }
 
 func (r *repo) Update(ctx context.Context, category entity.Category) error {
-	res, err := r.NewUpdate().Model(&category).WherePK().Exec(ctx)
-	return rcconn.UpdateErr(res, err)
+	return r.NewUpdate().
+		Model(&category).
+		WherePK().
+		Returning("*").
+		Scan(ctx, &category)
 }
 
 func (r *repo) Delete(ctx context.Context, guid uuid.UUID) error {
-	_, err := r.NewDelete().Model((*entity.Category)(nil)).Where("guid = ?", guid).Exec(ctx)
-	return rcconn.DeleteErr(err)
+	var deleted entity.Category
+	return r.NewDelete().
+		Model(&deleted).
+		Where("guid = ?", guid).
+		Returning("*").
+		Scan(ctx, &deleted)
 }
 
 func (r *repo) List(ctx context.Context, name *string) ([]entity.Category, error) {
