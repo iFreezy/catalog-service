@@ -26,6 +26,8 @@ func New(
 
 	router.Use(httph.NewErrorMiddleware())
 
+	router.Use(makeErrorMiddleware())
+
 	router.Use(mzerolog.NewMiddleware(
 		mzerolog.WithSkipper(util.IsFilteredHttpRoute),
 		mzerolog.WithStringExtractor("user_id", func(r *http.Request) string {
