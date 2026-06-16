@@ -8,3 +8,15 @@ type Manifest struct {
 	ErrorDetail  string
 	ErrorDetails []string
 }
+
+type Replacer interface {
+	Replace(err error) error
+}
+
+type Expander interface {
+	Expand(err error) *Manifest
+}
+
+type Applicator interface {
+	Apply(ctx any, manifest *Manifest)
+}
