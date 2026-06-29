@@ -1,5 +1,6 @@
 OUTPUT:=./bin/app
 GO_LINT_VERSION=1.64.8
+MOCKERY_VERSION=2.53.3
 
 GO_FILE:=./main.go
 
@@ -26,6 +27,15 @@ build: ## Сборка приложения
 .PHONY: test
 test: ## Запуск тестов
 	go test -count=1 -v ./...
+
+.PHONY: cover
+cover: ## Запуск тестов с отчётом о покрытии
+	go test -count=1 -race -coverprofile=coverage.out ./...
+	go tool cover -func=coverage.out
+
+.PHONY: mocks
+mocks: ## Генерация моков через mockery
+	go run github.com/vektra/mockery/v2@v${MOCKERY_VERSION} --config .mockery.yaml
 
 .PHONY: run
 run: ## Запуск приложения
