@@ -12,6 +12,10 @@ type (
 		InsideTx(ctx context.Context, f func(ctx context.Context) error) error
 	}
 
+	Migrate interface {
+		Migrate(ctx context.Context) (oldVer, newVer int64, err error)
+	}
+
 	Category interface {
 		Transactional
 		Create(ctx context.Context, category entity.Category) error
