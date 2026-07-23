@@ -3,46 +3,76 @@ package builder
 import (
 	"context"
 	"fmt"
+	"os"
+	"os/signal"
 	"reflect"
 	"sync"
+	"syscall"
 
 	"github.com/iFreezy/catalog-service/internal/app/config"
 	rhandler "github.com/iFreezy/catalog-service/internal/app/handler"
+	hcategory "github.com/iFreezy/catalog-service/internal/app/handler/category"
 	rhealth "github.com/iFreezy/catalog-service/internal/app/handler/health"
+	hproduct "github.com/iFreezy/catalog-service/internal/app/handler/product"
 	"github.com/iFreezy/catalog-service/internal/app/processor"
+	rprocessor "github.com/iFreezy/catalog-service/internal/app/processor/http"
 	pprocessor "github.com/iFreezy/catalog-service/internal/app/processor/other"
 	"github.com/iFreezy/catalog-service/internal/app/repository"
 	rcpostgres "github.com/iFreezy/catalog-service/internal/app/repository/postgres"
 	pcategory "github.com/iFreezy/catalog-service/internal/app/repository/postgres/category"
 	pproduct "github.com/iFreezy/catalog-service/internal/app/repository/postgres/product"
+	"github.com/iFreezy/catalog-service/internal/app/service"
+	scategory "github.com/iFreezy/catalog-service/internal/app/service/category"
+	sproduct "github.com/iFreezy/catalog-service/internal/app/service/product"
 	"github.com/rs/zerolog/log"
 	"github.com/urfave/cli/v2"
 )
+
+// chErrorsBufferSize lets asynchronous processors report errors without
+// blocking when they produce them faster than they are logged.
+const chErrorsBufferSize = 4096
 
 // Builder encapsulates the whole application-assembly logic: it holds every
 // component and exposes Build* methods that initialize them in the right order,
 // accumulating the first initialization error in b.err.
 type Builder struct {
-	cCtx *cli.Context
-	ctx  context.Context
-	wg   sync.WaitGroup
-	err  error
+	cCtx     *cli.Context
+	ctx      context.Context
+	wg       sync.WaitGroup
+	err      error
+	chErrors chan error
 
 	cfg          config.Config
 	connPostgres *rcpostgres.Client
 	categoryRepo repository.Category
 	productRepo  repository.Product
 
-	healthHandler rhandler.Health
+	categoryService service.Category
+	productService  service.Product
+
+	healthHandler   rhandler.Health
+	categoryHandler rhandler.Category
+	productHandler  rhandler.Product
 
 	processors []processor.Processor
 }
 
 func NewBuilder(cCtx *cli.Context) *Builder {
 	var b = Builder{
-		cCtx: cCtx,
-		ctx:  context.Background(),
+		cCtx:     cCtx,
+		chErrors: make(chan error, chErrorsBufferSize),
 	}
+
+	var cancelFunc func()
+
+	b.ctx, cancelFunc = context.WithCancel(context.Background())
+
+	var sig = make(chan os.Signal, 1)
+
+	signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
+
+	go b.waitForSignal(sig, cancelFunc)
+	go b.printErrors()
 
 	// Health Handler has no dependencies, so it is created right away.
 	b.healthHandler = rhealth.NewHandler()
@@ -119,8 +149,76 @@ func (b *Builder) BuildRepoProduct() {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+///// SERVICES /////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
+func (b *Builder) BuildServiceCategory() {
+	b.exec(true, func(b *Builder) {
+		b.categoryService = scategory.NewService(b.categoryRepo, b.productRepo)
+	}, b.categoryRepo, b.productRepo)
+}
+
+func (b *Builder) BuildServiceProduct() {
+	b.exec(true, func(b *Builder) {
+		b.productService = sproduct.NewService(b.productRepo, b.categoryRepo)
+	}, b.productRepo, b.categoryRepo)
+}
+
+////////////////////////////////////////////////////////////////////////////////
+///// HANDLERS /////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
+func (b *Builder) BuildHandlerHttpCategory() {
+	b.exec(true, func(b *Builder) {
+		b.categoryHandler = hcategory.NewHandler(b.categoryService)
+	}, b.categoryService)
+}
+
+func (b *Builder) BuildHandlerHttpProduct() {
+	b.exec(true, func(b *Builder) {
+		b.productHandler = hproduct.NewHandler(b.productService)
+	}, b.productService)
+}
+
+////////////////////////////////////////////////////////////////////////////////
+///// PROCESSORS ///////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
+func (b *Builder) BuildProcHttp() {
+	b.exec(true, func(b *Builder) {
+		var procHttp = rprocessor.NewHttp(
+			b.healthHandler,
+			b.categoryHandler,
+			b.productHandler,
+			nil,
+			b.cfg.WebServer,
+		)
+
+		b.processors = append(b.processors, procHttp)
+	}, b.categoryHandler, b.productHandler)
+}
+
+////////////////////////////////////////////////////////////////////////////////
 ///// PRIVATE METHODS //////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
+
+// waitForSignal blocks until the OS asks the application to stop and then
+// cancels the application context, which triggers graceful shutdown of every
+// running processor.
+func (b *Builder) waitForSignal(sig chan os.Signal, cancelFunc func()) {
+	var s = <-sig
+
+	log.Info().Str("signal", s.String()).Msg("Shutdown is requested")
+
+	cancelFunc()
+}
+
+// printErrors logs errors reported asynchronously by processors after start.
+func (b *Builder) printErrors() {
+	for err := range b.chErrors {
+		log.Error().Err(err).Msg("Asynchronous error occurred")
+	}
+}
 
 func (b *Builder) buildConfig(args config.LoadArgs, injectors []func(*config.Config)) {
 	args.Output = b.cCtx.App.Writer

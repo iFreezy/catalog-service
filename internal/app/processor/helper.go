@@ -2,6 +2,7 @@ package processor
 
 import (
 	"context"
+	"io"
 	"sync"
 )
 
@@ -23,5 +24,20 @@ func Wrap(ctx context.Context, wg *sync.WaitGroup, cb func(context.Context)) {
 		default:
 			cb(ctx)
 		}
+	}()
+}
+
+// WatchForShutdown waits for ctx to be cancelled and then releases the resource
+// by calling closer.Close(). The goroutine is tracked in wg so that the caller
+// can wait for every cleanup to finish before exiting.
+func WatchForShutdown(ctx context.Context, wg *sync.WaitGroup, closer io.Closer) {
+	wg.Add(1)
+
+	go func() {
+		defer wg.Done()
+
+		<-ctx.Done()
+
+		_ = closer.Close()
 	}()
 }
