@@ -57,6 +57,10 @@ func (s *svc) GetByGUID(ctx context.Context, guid uuid.UUID) (entity.Product, er
 	return s.repoProduct.GetByGUID(ctx, guid)
 }
 
+func (s *svc) GetByGUIDs(ctx context.Context, guids []uuid.UUID) ([]entity.Product, error) {
+	return s.repoProduct.GetByGUIDs(ctx, guids)
+}
+
 func (s *svc) Update(ctx context.Context, guid uuid.UUID, req entity.RequestProductUpdate) (entity.Product, error) {
 	product, err := s.repoProduct.GetByGUID(ctx, guid)
 	if err != nil {

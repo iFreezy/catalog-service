@@ -37,6 +37,10 @@ cover: ## Запуск тестов с отчётом о покрытии
 mocks: ## Генерация моков через mockery
 	go run github.com/vektra/mockery/v2@v${MOCKERY_VERSION} --config .mockery.yaml
 
+.PHONY: generate-proto
+generate-proto:
+	buf generate
+
 .PHONY: run
 run: ## Запуск приложения
 	go run ${GO_FILE}
