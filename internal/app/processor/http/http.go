@@ -1,26 +1,36 @@
 package http
 
 import (
+	"context"
+	"net"
 	"net/http"
+	"sync"
+	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/iFreezy/catalog-service/internal/app/config/section"
 	rhandler "github.com/iFreezy/catalog-service/internal/app/handler"
+	"github.com/iFreezy/catalog-service/internal/app/processor"
 	"github.com/iFreezy/catalog-service/internal/app/util"
 	"github.com/iFreezy/catalog-service/internal/pkg/http/httph"
 	"github.com/iFreezy/catalog-service/internal/pkg/http/mzerolog"
+	"github.com/rs/zerolog/log"
 )
 
-type Processor struct {
+const shutdownTimeout = 5 * time.Second
+
+type httpProc struct {
+	addr   string
 	server *http.Server
 }
 
-func New(
-	cfg section.WebServer,
+func NewHttp(
 	hHealth rhandler.Health,
 	hCategory rhandler.Category,
 	hProduct rhandler.Product,
-) *Processor {
+	_ []httph.Middleware,
+	cfg section.WebServer,
+) processor.Processor {
 	router := mux.NewRouter()
 	router.NotFoundHandler = http.HandlerFunc(handlerNotFound)
 
@@ -66,9 +76,31 @@ func New(
 		IdleTimeout:  cfg.IdleTimeout,
 	}
 
-	return &Processor{server: server}
+	return &httpProc{addr: cfg.Address, server: server}
 }
 
-func (p *Processor) Serve() error {
-	return p.server.ListenAndServe()
+func (p *httpProc) StartAsync(ctx context.Context, wg *sync.WaitGroup) {
+	var lc net.ListenConfig
+
+	l, err := lc.Listen(ctx, "tcp", p.addr)
+	if err != nil {
+		log.Fatal().Err(err).Str("listen_addr", p.addr).
+			Msg("Failed to start listening TCP addr for HTTP server")
+
+		return
+	}
+
+	log.Info().Str("listen_addr", p.addr).
+		Msg("Listening of TCP addr for HTTP server has been started")
+
+	go p.serve(l)
+
+	processor.WatchForShutdown(ctx, wg, util.CloserFunc(l.Close))
+	processor.WatchForShutdown(ctx, wg, util.NewCloserContextFunc(
+		context.Background(), p.server.Shutdown, shutdownTimeout,
+	))
+}
+
+func (p *httpProc) serve(l net.Listener) {
+	_ = p.server.Serve(l)
 }

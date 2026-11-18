@@ -2,6 +2,7 @@ package http
 
 import (
 	"database/sql"
+	"errors"
 	"net/http"
 
 	"github.com/iFreezy/catalog-service/internal/app/entity"
@@ -31,7 +32,17 @@ func makeErrorMiddleware() httph.Middleware {
 			ErrorCode:   errorCode,
 			ErrorDetail: detail,
 		}
-		return func(_ error) *respondent.Manifest { return &genericManifest }
+		return func(err error) *respondent.Manifest {
+			var appErr *entity.AppError
+			if errors.As(err, &appErr) {
+				return &respondent.Manifest{
+					Status:    appErr.HTTPStatus(),
+					Error:     appErr.Message,
+					ErrorCode: appErr.HTTPStatus(),
+				}
+			}
+			return &genericManifest
+		}
 	}
 
 	var replacer = respondent.NewSimpleReplacer().
@@ -41,8 +52,11 @@ func makeErrorMiddleware() httph.Middleware {
 		ExtractorFor(
 			binding.ErrValidationFailed,
 			binding.NewRespondentManifestExtractor(http.StatusBadRequest, 40001, _40001)).
-		WithoutDetail(entity.ErrCategoryDuplicate, http.StatusBadRequest, 40002, _40002).
-		WithoutDetail(entity.ErrProductDuplicate, http.StatusBadRequest, 40003, _40003).
+		WithoutDetail(entity.ErrCategoryDuplicate, http.StatusConflict, 40002, _40002).
+		WithoutDetail(entity.ErrProductDuplicate, http.StatusConflict, 40003, _40003).
+		WithoutDetail(entity.ErrIncorrectParameters, http.StatusBadRequest, 40001, _40001).
+		WithoutDetail(entity.ErrCategoryHasProducts, http.StatusConflict, 40901, "Category has products").
+		WithoutDetail(entity.ErrInvalidReference, http.StatusBadRequest, 40001, _40001).
 		WithDetail(entity.ErrNotFound, http.StatusNotFound, 40401, _40401, _40401D).
 		FallbackExtractor(makeFallbackExtractor(http.StatusInternalServerError, 50001, _50001, _50001D))
 

@@ -10,6 +10,7 @@ import (
 	rcconn "github.com/iFreezy/catalog-service/internal/app/repository/conn/postgres"
 	rcpostgres "github.com/iFreezy/catalog-service/internal/app/repository/postgres"
 	"github.com/iFreezy/catalog-service/internal/app/util"
+	"github.com/uptrace/bun"
 )
 
 type repo struct {
@@ -34,6 +35,15 @@ func (r *repo) GetByGUID(ctx context.Context, guid uuid.UUID) (entity.Product, e
 		return entity.Product{}, util.ReplaceErr1(err, sql.ErrNoRows, entity.ErrNotFound)
 	}
 	return product, nil
+}
+
+func (r *repo) GetByGUIDs(ctx context.Context, guids []uuid.UUID) ([]entity.Product, error) {
+	if len(guids) == 0 {
+		return []entity.Product{}, nil
+	}
+	var products []entity.Product
+	err := r.NewSelect().Model(&products).Where("guid IN (?)", bun.In(guids)).Scan(ctx)
+	return products, rcconn.DeleteErr(err)
 }
 
 func (r *repo) Update(ctx context.Context, product entity.Product) error {

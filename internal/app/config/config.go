@@ -17,6 +17,7 @@ type (
 		Repository section.Repository
 		WebServer  section.WebServer
 		Monitor    section.Monitor
+		Processor  section.Processor
 	}
 
 	LoadArgs struct {

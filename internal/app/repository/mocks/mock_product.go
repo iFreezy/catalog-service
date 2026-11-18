@@ -16,6 +16,14 @@ type MockProduct struct {
 	mock.Mock
 }
 
+func (_m *MockProduct) GetByGUIDs(ctx context.Context, guids []uuid.UUID) ([]entity.Product, error) {
+	ret := _m.Called(ctx, guids)
+	if products, ok := ret.Get(0).([]entity.Product); ok {
+		return products, ret.Error(1)
+	}
+	return nil, ret.Error(1)
+}
+
 type MockProduct_Expecter struct {
 	mock *mock.Mock
 }
